@@ -1,23 +1,47 @@
-from flask import Flask
-from flask_mail import Mail, Message
+from flask import Flask, render_template, request
+import sqlite3 as sql
+app = Flask(__name__)
 
-app =Flask(__name__)
-mail=Mail(app)
+@app.route('/')
+def home():
+   return render_template('home.html')
 
-app.config['MAIL_SERVER']='smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'put you username here'
-app.config['MAIL_PASSWORD'] = 'put your password here'
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-mail = Mail(app)
+@app.route('/enternew')
+def new_student():
+   return render_template('student.html')
 
-@app.route("/")
-def index():
-   msg = Message('Hello', sender = 'put your sender here', recipients = ['put your recipients here'])
-   msg.body = "Hello Flask message sent from Flask-Mail"
-   mail.send(msg)
-   return "Sent"
+@app.route('/addrec',methods = ['POST', 'GET'])
+def addrec():
+   if request.method == 'POST':
+      try:
+         nm = request.form['nm']
+         addr = request.form['add']
+         city = request.form['city']
+         pin = request.form['pin']
+         
+         with sql.connect("database.db") as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO students (name,addr,city,pin) VALUES (?,?,?,?)",(nm,addr,city,pin) )
+            con.commit()
+            msg = "Record successfully added"
+      except:
+         con.rollback()
+         msg = "error in insert operation"
+      
+      finally:
+         return render_template("result.html",msg = msg)
+         con.close()
+
+@app.route('/list')
+def list():
+   con = sql.connect("database.db")
+   con.row_factory = sql.Row
+   
+   cur = con.cursor()
+   cur.execute("select * from students")
+   
+   rows = cur.fetchall();
+   return render_template("list.html",rows = rows)
 
 if __name__ == '__main__':
    app.run(debug = True)

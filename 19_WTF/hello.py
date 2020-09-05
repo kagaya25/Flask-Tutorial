@@ -1,5 +1,9 @@
 from flask import Flask, render_template, request, flash
-from form import ContactForm
+from forms import ContactForm
+from flask_wtf import Form
+from wtforms import TextField, IntegerField, TextAreaField, SubmitField, RadioField,SelectField
+from wtforms import validators, ValidationError
+
 app = Flask(__name__)
 app.secret_key = 'development key'
 

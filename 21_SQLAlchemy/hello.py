@@ -1,23 +1,43 @@
-from flask import Flask
-from flask_mail import Mail, Message
+from flask import Flask, request, flash, url_for, redirect, render_template
+from flask_sqlalchemy import SQLAlchemy
+# pip install flask-sqlalchemy 
+# install the flasksqlalchemy first to make this work 
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.sqlite3'
+app.config['SECRET_KEY'] = "Developments "
+db = SQLAlchemy(app)
 
-app =Flask(__name__)
-mail=Mail(app)
+class students(db.Model):
+   id = db.Column('student_id', db.Integer, primary_key = True)
+   name = db.Column(db.String(100))
+   city = db.Column(db.String(50))
+   addr = db.Column(db.String(200)) 
+   pin = db.Column(db.String(10))
 
-app.config['MAIL_SERVER']='smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'put you username here'
-app.config['MAIL_PASSWORD'] = 'put your password here'
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-mail = Mail(app)
+   def __init__(self, name, city, addr,pin):
+      self.name = name
+      self.city = city
+      self.addr = addr
+      self.pin = pin
 
-@app.route("/")
-def index():
-   msg = Message('Hello', sender = 'put your sender here', recipients = ['put your recipients here'])
-   msg.body = "Hello Flask message sent from Flask-Mail"
-   mail.send(msg)
-   return "Sent"
+@app.route('/')
+def show_all():
+   return render_template('show_all.html', students = students.query.all() )
+
+@app.route('/new', methods = ['GET', 'POST'])
+def new():
+   if request.method == 'POST':
+      if not request.form['name'] or not request.form['city'] or not request.form['addr']:
+         flash('Please enter all the fields', 'error')
+      else:
+         student = students(request.form['name'], request.form['city'],request.form['addr'], request.form['pin'])
+         
+         db.session.add(student)
+         db.session.commit()
+         flash('Record was successfully added')
+         return redirect(url_for('show_all'))
+   return render_template('new.html')
 
 if __name__ == '__main__':
+   db.create_all()
    app.run(debug = True)
